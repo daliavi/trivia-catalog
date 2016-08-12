@@ -105,13 +105,14 @@ def fbdisconnect():
     url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id,access_token)
     h = httplib2.Http()
     result = h.request(url, 'DELETE')[1]
+    login_session.clear()
     return "you have been logged out"
 
 
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
-    #app.logger.info('Starting gconnect, Client id: %s' % CLIENT_ID)
+    app.logger.info('Starting gconnect, Client id: %s' % CLIENT_ID)
     # Validate state token
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -217,12 +218,13 @@ def gdisconnect():
     print 'result is '
     print result
     if result['status'] == '200':
-        del login_session['access_token']
-        del login_session['gplus_id']
-        del login_session['username']
-        del login_session['email']
-        del login_session['picture']
-        del login_session['user_id']
+        # del login_session['access_token']
+        # del login_session['gplus_id']
+        # del login_session['username']
+        # del login_session['email']
+        # del login_session['picture']
+        # del login_session['user_id']
+        login_session.clear()
         response = make_response(json.dumps('Successfully disconnected.'), 200)
         response.headers['Content-Type'] = 'application/json'
         return response
