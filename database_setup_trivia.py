@@ -1,0 +1,144 @@
+import sys
+from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+# from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+
+Base = declarative_base()
+
+
+class User(Base):
+    __tablename__ = 'user'
+
+    id = Column(
+        Integer, primary_key=True
+    )
+
+    name = Column(
+        String(250),
+        nullable=False
+    )
+
+    email = Column(
+        String(250),
+        nullable=False
+    )
+
+    picture = Column(
+        String(250)
+    )
+
+    @property
+    def serialize(self):
+        # Returns object data in easily serializeable format
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'picture': self.picture,
+        }
+
+
+class Question(Base):
+    __tablename__ = 'question'
+
+    id = Column(
+        Integer, primary_key=True
+    )
+
+    text = Column(
+        String(1024),
+        nullable=False
+    )
+
+    created_by = Column(
+        Integer, ForeignKey('user.id')
+    )
+
+    user = relationship(User)
+
+    @property
+    def serialize(self):
+        # Returns object data in easily serializeable format
+        return {
+            'id': self.id,
+            'text': self.text,
+            'created_by': self.created_by,
+        }
+
+
+class Answer(Base):
+        __tablename__ = 'answer'
+
+        id = Column(
+            Integer, primary_key=True
+        )
+
+        text = Column(
+            String(80),
+            nullable=False
+        )
+
+        created_by = Column(
+            Integer, ForeignKey('user.id')
+        )
+
+        question_id = Column(
+            Integer, ForeignKey('question.id')
+        )
+
+        user = relationship(User)
+
+        question = relationship(Question)
+
+        @property
+        def serialize(self):
+            # Returns object data in easily serializeable format
+            return {
+                'id': self.id,
+                'text': self.text,
+                'created_by': self.created_by,
+                'question_id': self.question_id,
+            }
+
+
+class Category(Base):
+    __tablename__ = 'category'
+
+    name = Column(
+        String(80),
+        nullable=False
+    )
+
+    id = Column(
+        Integer, primary_key=True
+    )
+
+    @property
+    def serialize(self):
+        # Returns object data in easily serializeable format
+        return{
+            'id': self.id,
+            'name':self.name,
+        }
+
+
+class QuestionCategoryMap(Base):
+    __tablename__ = 'question_category_map'
+
+    id = Column(
+        Integer, primary_key=True
+    )
+
+    category_id = Column(
+        Integer, ForeignKey('category.id')
+    )
+
+    question_id = Column(
+        Integer, ForeignKey('question.id')
+    )
+
+## end of file
+engine = create_engine('sqlite:///trivia_database.db')
+Base.metadata.create_all(engine)
