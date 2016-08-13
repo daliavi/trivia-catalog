@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<form action="{{url_for('new_question')}}" method = 'post'>
+    <p>Question:</p>
+    <input type = 'text' size = '100' name ='question'>
+    <p>Correct Answer:</p>
+    <input type = 'text' size = '30' name ='correct_answer'>
+    <p>Alternative Answer:</p>
+    <input type = 'text' size = '30' name ='alt_answer_1'>
+    <p>Alternative Answer:</p>
+    <input type = 'text' size = '30' name ='alt_answer_2'>
+    <p>Alternative Answer:</p>
+    <input type = 'text' size = '30' name ='alt_answer_3'>
+
+    <input type = 'submit' value = 'Create'>
+</form>
+
+
+</body>
+</html>

@@ -23,6 +23,7 @@ session = service.get_db_session()
 # creating anti-forgery state token
 @app.route('/login')
 def showLogin():
+    login_session.clear()
     state = ''.join(
         random.choice(string.ascii_uppercase + string.digits)
         for x in xrange(32)
@@ -238,7 +239,60 @@ def gdisconnect():
 @app.route('/users/JSON')
 def usersJSON():
     users = service.get_all_users(session=session)
-    return jsonify(User=[i.serialize for i in users])
+    return jsonify(Users=[i.serialize for i in users])
+
+#Test engpoint to return all questions
+@app.route('/questions/JSON')
+def questionsJSON():
+    questions = service.get_all_questions(session=session)
+    return jsonify(Questions=[i.serialize for i in questions])
+
+#Test engpoint to return all categories
+@app.route('/categories/JSON')
+def categoriesJSON():
+    categories = service.get_all_categories(session=session)
+    return jsonify(Categories=[i.serialize for i in categories])
+
+#Test engpoint to return all questions
+@app.route('/answers/JSON')
+def answersJSON():
+    answers = service.get_all_answers(session=session)
+    return jsonify(Answers=[i.serialize for i in answers])
+
+@app.route('/question/new/', methods=['GET', 'POST'])
+def new_question():
+    if 'username' not in login_session:
+        return redirect('/login')
+    if request.method == 'POST':
+        service.add_question(
+            session=session,
+            login_session=login_session,
+            question=request.form['question'],
+            correct_answer=request.form['correct_answer'],
+            alt_answer_1=request.form['alt_answer_1'],
+            alt_answer_2=request.form['alt_answer_2'],
+            alt_answer_3=request.form['alt_answer_3'],
+        )
+        flash('New question created!')
+        return 'OK'
+    else:  # if received GET
+        return render_template('newquestion.html')
+
+
+@app.route('/category/new/', methods=['GET', 'POST'])
+def new_category():
+    if 'username' not in login_session:
+        return redirect('/login')
+    if request.method == 'POST':
+        service.add_category(
+            session=session,
+            login_session=login_session,
+            category_name=request.form['category_name']
+        )
+        flash('New category created!')
+        return 'Category created'
+    else:  # if received GET
+        return render_template('newcategory.html')
 
 
 if __name__ == '__main__':

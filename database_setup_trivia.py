@@ -1,5 +1,5 @@
 import sys
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 # from sqlalchemy.orm import sessionmaker
@@ -80,6 +80,11 @@ class Answer(Base):
             nullable=False
         )
 
+        is_correct = Column(
+            Boolean,
+            default=False
+        )
+
         created_by = Column(
             Integer, ForeignKey('user.id')
         )
@@ -98,6 +103,7 @@ class Answer(Base):
             return {
                 'id': self.id,
                 'text': self.text,
+                'is_correct': self.is_correct,
                 'created_by': self.created_by,
                 'question_id': self.question_id,
             }
@@ -115,12 +121,19 @@ class Category(Base):
         Integer, primary_key=True
     )
 
+    created_by = Column(
+        Integer, ForeignKey('user.id')
+    )
+
+    user = relationship(User)
+
     @property
     def serialize(self):
         # Returns object data in easily serializeable format
         return{
             'id': self.id,
             'name':self.name,
+            'created_by': self.created_by
         }
 
 
