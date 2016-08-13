@@ -152,6 +152,15 @@ class QuestionCategoryMap(Base):
         Integer, ForeignKey('question.id')
     )
 
+    @property
+    def serialize(self):
+        # Returns object data in easily serializeable format
+        return {
+            'id': self.id,
+            'category_id': self.category_id,
+            'question_id': self.question_id
+        }
+
 ## end of file
 engine = create_engine('sqlite:///trivia_database.db')
 Base.metadata.create_all(engine)

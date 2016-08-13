@@ -257,7 +257,14 @@ def categoriesJSON():
 @app.route('/answers/JSON')
 def answersJSON():
     answers = service.get_all_answers(session=session)
-    return jsonify(Answers=[i.serialize for i in answers])
+    return jsonify(Answers=[i.serialize for i in answers])  # Test engpoint to return all questions
+
+#Test engpoint to return all category-question mappings
+@app.route('/mapping/JSON')
+def categoryMappingJSON():
+    mapping = service.get_all_mapping(session=session)
+    return jsonify(Category_mapping=[i.serialize for i in mapping])
+
 
 @app.route('/question/new/', methods=['GET', 'POST'])
 def new_question():
@@ -272,11 +279,14 @@ def new_question():
             alt_answer_1=request.form['alt_answer_1'],
             alt_answer_2=request.form['alt_answer_2'],
             alt_answer_3=request.form['alt_answer_3'],
+            categories=request.form.getlist('categories')
         )
         flash('New question created!')
-        return 'OK'
+
+        return "OK"
     else:  # if received GET
-        return render_template('newquestion.html')
+        categories = service.get_all_categories(session=session)
+        return render_template('newquestion.html', categories=categories)
 
 
 @app.route('/category/new/', methods=['GET', 'POST'])

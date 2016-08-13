@@ -54,10 +54,14 @@ def get_all_answers(session):
     all_answers = session.query(Answer).all()
     return all_answers
 
+def get_all_mapping(session):
+    all_mapping = session.query(QuestionCategoryMap).all()
+    return all_mapping
+
 
 def add_question(
         session, login_session, question, correct_answer,
-        alt_answer_1, alt_answer_2, alt_answer_3):
+        alt_answer_1, alt_answer_2, alt_answer_3, categories):
     #get user id
     user = session.query(User).filter_by(email=login_session['email']).one()
 
@@ -98,11 +102,20 @@ def add_question(
             )
 
         ]
+        question_categories = []
+
+        for i in categories:
+            print "categories: " + str(i)
+            question_categories.append(
+                QuestionCategoryMap(
+                    category_id=i,
+                    question_id=question.id
+                )
+            )
 
         session.bulk_save_objects(answers)  # needs sqlalchemy version 1.0 or higher
+        session.bulk_save_objects(question_categories)
         session.commit()
-
-        #TODO save categories
 
         return question
     else:
