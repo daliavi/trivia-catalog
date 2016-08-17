@@ -1,14 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block head %}
+
+{% endblock %}
+
+{% block title %}Main{% endblock %}
+
+{% block content %}
+
 <form action="{{url_for('new_category')}}" method = 'post'>
     <p>Category Name:</p>
     <input type = 'text' size = '60' name ='category_name'>
     <input type = 'submit' value = 'Create'>
 </form>
-</body>
-</html>
+
+
+<!--<script src="{{ url_for('static', filename='jquery.min.js') }}"></script>-->
+
+{% endblock %}

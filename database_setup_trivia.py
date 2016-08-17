@@ -56,6 +56,8 @@ class Question(Base):
         Integer, ForeignKey('user.id')
     )
 
+    answers = relationship("Answer", backref="question")
+
     user = relationship(User)
 
     @property
@@ -94,8 +96,6 @@ class Answer(Base):
         )
 
         user = relationship(User)
-
-        question = relationship(Question)
 
         @property
         def serialize(self):

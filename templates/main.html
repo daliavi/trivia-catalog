@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block head %}
+
+{% endblock %}
+
+{% block title %}Main{% endblock %}
+
+{% block content %}
+
+<div class = 'row'>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                    <li><strong>{{message}}</strong></li>
+                 {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
+</div>
+
+<div class="row">
+<div class="col-md-4">
+    <h3>Categories</h3>
+    <a href="{{ url_for('new_category') }}">Add New Category</a>
+    <br>
+    <br>
+    <a href="{{ url_for('main') }}">All Categories</a>
+    <br>
+    {% for i in categories %}
+        <a href="{{ url_for('questions_by_category', category_id=i.id) }}">{{ i.name }}</a>
+    <br>
+    {% endfor %}
+</div>
+<div class="col-md-8">
+    <h3>Questions</h3>
+    <a href="{{ url_for('new_question') }}">Add New Question</a>
+    <br>
+    <br>
+    <ol>
+    {% for i in questions %}
+        <li>{{i.text + ' '}}
+            <a href="{{ url_for('new_category') }}">Edit</a>
+            <a href="{{ url_for('delete_question', question_id=i.id) }}">Delete</a>
+        </li>
+        <ol type="A">
+        {% for a in i.answers | shuffle %}
+            <li>{{a.text + ' '}} {%- if a.is_correct == True -%}  (correct) {% endif %} </li>
+        {% endfor %}
+        </ol>
+    {% endfor %}
+    </ol>
+</div>
+</div>
+
+{% endblock %}

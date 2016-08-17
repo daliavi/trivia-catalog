@@ -54,9 +54,50 @@ def get_all_answers(session):
     all_answers = session.query(Answer).all()
     return all_answers
 
+
 def get_all_mapping(session):
     all_mapping = session.query(QuestionCategoryMap).all()
     return all_mapping
+
+
+def get_questions_by_category(session, category_id):
+    questions = (session.query(Question)
+                 .join(QuestionCategoryMap)
+                 .filter(QuestionCategoryMap.category_id == category_id)
+                 ).all()
+
+    return questions
+
+
+def get_question_by_id(session, question_id):
+    question = session.query(Question).filter_by(id = question_id).one()
+    return question
+
+
+def get_all_data():
+    answer_list = [
+        {'id': '123', 'text': 'Vilnius', 'is_correct': 'True'},
+        {'id': '123', 'text': 'Minsk', 'is_correct': 'False'},
+        {'id': '123', 'text': 'Riga', 'is_correct': 'False'},
+        {'id': '123', 'text': 'Talin', 'is_correct': 'False'},
+
+    ]
+
+    question_list = [
+        {'id': '321', 'text': 'What is the capital of Lithuania_1?', 'created_by': '123', 'answers': answer_list},
+        {'id': '321', 'text': 'What is the capital of Lithuania_2?', 'created_by': '123', 'answers': answer_list},
+        {'id': '321', 'text': 'What is the capital of Lithuania_3?', 'created_by': '123', 'answers': answer_list},
+    ]
+
+    category_list = [
+        {'id': '123', 'name': 'Biology', 'created_by': '321', 'questions': question_list},
+        {'id': '123', 'name': 'History', 'created_by': '321', 'questions': question_list},
+        {'id': '123', 'name': 'Maths', 'created_by': '321', 'questions': question_list},
+    ]
+
+    my_dict = {'categories': category_list}
+
+    return my_dict
 
 
 def add_question(
@@ -136,3 +177,10 @@ def add_category(session, login_session, category_name):
     session.commit()
     print "category id: " + str(category.id)
     return category
+
+
+def delete_question(session, question_id):
+    question = session.query(Question).filter_by(id=question_id).one()
+    session.delete(question)
+    session.commit()
+    return

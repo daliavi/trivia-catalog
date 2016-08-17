@@ -12,6 +12,7 @@ import json
 from flask import make_response
 import requests
 
+
 CLIENT_ID = json.loads(
     open('client_secrets.json','r').read())['web']['client_id']
 
@@ -19,6 +20,16 @@ app = Flask(__name__)
 
 session = service.get_db_session()
 
+
+# registering custom filter for jinja
+@app.template_filter('shuffle')
+def reverse_filter(s):
+    try:
+        result = list(s)
+        random.shuffle(result)
+        return result
+    except:
+        return s
 
 # creating anti-forgery state token
 @app.route('/login')
@@ -265,6 +276,13 @@ def categoryMappingJSON():
     mapping = service.get_all_mapping(session=session)
     return jsonify(Category_mapping=[i.serialize for i in mapping])
 
+#Test engpoint to test
+@app.route('/test/JSON')
+def testJSON():
+    my_dict = service.get_all_data()
+
+    return jsonify(my_dict)
+
 
 @app.route('/question/new/', methods=['GET', 'POST'])
 def new_question():
@@ -282,8 +300,7 @@ def new_question():
             categories=request.form.getlist('categories')
         )
         flash('New question created!')
-
-        return "OK"
+        return redirect('/')
     else:  # if received GET
         categories = service.get_all_categories(session=session)
         return render_template('newquestion.html', categories=categories)
@@ -300,9 +317,79 @@ def new_category():
             category_name=request.form['category_name']
         )
         flash('New category created!')
-        return 'Category created'
+        return redirect('/')
     else:  # if received GET
-        return render_template('newcategory.html')
+        #TODO get category dictionary
+        categories = {'biol': '1', 'hist':'2', 'astr':'5'}
+        return render_template('newcategory.html', categories=categories)
+
+
+@app.route('/', methods=['GET', 'POST'])
+def main():
+    if 'username' not in login_session:
+        return redirect('/login')
+    if request.method == 'POST':
+        pass
+    else:  # if received GET
+        # TODO get category dictionary
+        # categories = {'biol': '1', 'hist': '2', 'astr': '5'}
+        questions = service.get_all_questions(session=session)
+        categories = service.get_all_categories(session=session)
+        return render_template('main.html',
+                               categories=categories, questions=questions)
+
+
+#  how to build URL like /category/<int:category_id>/questions ???
+@app.route('/category/<int:category_id>', methods=['GET', 'POST'])
+def questions_by_category(category_id):
+    if 'username' not in login_session:
+        return redirect('/login')
+    if request.method == 'POST':
+        pass
+    else:  # if received GET
+        questions = service.get_questions_by_category(
+            session=session,
+            category_id=category_id
+        )
+        answers = [question.answers for question in questions]
+        categories = service.get_all_categories(session=session)
+        print questions
+        print answers
+        return render_template('main.html',
+                               categories=categories,
+                               questions=questions,
+                               answers=answers)
+
+
+@app.route('/question/delete/<int:question_id>', methods=['GET', 'POST'])
+def delete_question(question_id):
+    if 'username' not in login_session:
+        return redirect('/login')
+    if request.method == 'POST':
+        if request.form['submit'] == 'Delete':
+            service.delete_question(
+                session=session,
+                question_id=question_id
+            )
+            flash('The question was deleted!')
+
+        return redirect('/')
+
+    else:  # if received GET
+        question = service.get_question_by_id(
+            session=session,
+            question_id=question_id
+        )
+        return render_template('deletequestion.html',
+                               question=question)
+
+
+@app.route('/_category2python')
+def array2python():
+    category_id = json.loads(request.args.get('category_id'))
+    # do some stuff
+    print "Got from JS: " + str(category_id)
+    return jsonify(result=category_id)
 
 
 if __name__ == '__main__':
