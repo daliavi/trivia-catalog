@@ -351,14 +351,10 @@ def questions_by_category(category_id):
             session=session,
             category_id=category_id
         )
-        answers = [question.answers for question in questions]
         categories = service.get_all_categories(session=session)
-        print questions
-        print answers
         return render_template('main.html',
                                categories=categories,
-                               questions=questions,
-                               answers=answers)
+                               questions=questions)
 
 
 @app.route('/question/delete/<int:question_id>', methods=['GET', 'POST'])
@@ -384,6 +380,41 @@ def delete_question(question_id):
                                question=question)
 
 
+@app.route('/question/edit/<int:question_id>', methods=['GET', 'POST'])
+def edit_question(question_id):
+    if 'username' not in login_session:
+        return redirect('/login')
+    if request.method == 'POST':
+        if request.form['submit'] == 'Update':
+            service.update_question(
+                session=session,
+                question_id=question_id,
+                question_text=request.form['question'],
+                correct_answer_id=request.form['correct_answer_id'],
+                correct_answer=request.form['correct_answer'],
+                alt_answer_1=request.form['alt_answer_1'],
+                alt_answer_1_id=request.form['alt_answer_1_id'],
+                alt_answer_2=request.form['alt_answer_2'],
+                alt_answer_2_id=request.form['alt_answer_2_id'],
+                alt_answer_3=request.form['alt_answer_3'],
+                alt_answer_3_id=request.form['alt_answer_3_id'],
+                categories=request.form.getlist('categories')
+            )
+            flash('The question was updated!')
+
+        return redirect('/')
+
+    else:  # if received GET
+        question = service.get_question_by_id(
+            session=session,
+            question_id=question_id
+        )
+        categories = service.get_all_categories(session=session)
+        return render_template('editquestion.html',
+                               question=question,
+                               categories=categories)
+
+# not used
 @app.route('/_category2python')
 def array2python():
     category_id = json.loads(request.args.get('category_id'))

@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup_trivia import Base, User, Question, Answer, Category, QuestionCategoryMap
+from sqlalchemy import and_
 
 
 def get_db_session():
@@ -70,7 +71,7 @@ def get_questions_by_category(session, category_id):
 
 
 def get_question_by_id(session, question_id):
-    question = session.query(Question).filter_by(id = question_id).one()
+    question = session.query(Question).filter_by(id=question_id).one()
     return question
 
 
@@ -146,7 +147,6 @@ def add_question(
         question_categories = []
 
         for i in categories:
-            print "categories: " + str(i)
             question_categories.append(
                 QuestionCategoryMap(
                     category_id=i,
@@ -162,6 +162,67 @@ def add_question(
     else:
         print "did not add the question"
         return None
+
+
+def update_question(session, question_id, question_text, correct_answer, correct_answer_id,
+                    alt_answer_1, alt_answer_1_id,
+                    alt_answer_2, alt_answer_2_id,
+                    alt_answer_3, alt_answer_3_id, categories):
+
+    # updating the question
+    question = session.query(Question).filter_by(id=question_id).one()
+    question.text = question_text
+
+    # updating the answers
+    answer_correct = session.query(Answer).filter_by(id=correct_answer_id).one()
+    answer_correct.text = correct_answer
+
+    answer_alt_1 = session.query(Answer).filter_by(id=alt_answer_1_id).one()
+    answer_alt_1.text = alt_answer_1
+
+    answer_alt_2 = session.query(Answer).filter_by(id=alt_answer_2_id).one()
+    answer_alt_2.text = alt_answer_2
+
+    answer_alt_3 = session.query(Answer).filter_by(id=alt_answer_3_id).one()
+    answer_alt_3.text = alt_answer_3
+
+    # updating categories of the question
+    current_cat = [u.category_id for u in session.query(QuestionCategoryMap.category_id).filter_by(
+        question_id=question_id)]
+
+    # new categories come in a list of strings, need to convert to int
+    new_cat = map(int, categories)
+
+    # finding categories in either current or new list, but not in both
+    items = set(current_cat) ^ set(new_cat)
+
+    # creating lists of categories to remove and to add
+    cat_to_remove = [i for i in items if (i in current_cat)]
+    cat_to_add = [i for i in items if (i in new_cat)]
+
+    if cat_to_remove:
+        session.query(QuestionCategoryMap).filter(and_(
+            QuestionCategoryMap.question_id == question_id,
+            QuestionCategoryMap.category_id.in_(cat_to_remove)
+            )).delete(synchronize_session='fetch')
+    else:
+        print "nothing to remove"
+
+    if cat_to_add:
+        new_question_categories = []
+        for i in cat_to_add:
+            new_question_categories.append(
+                QuestionCategoryMap(
+                    category_id=i,
+                    question_id=question.id
+                )
+            )
+        session.bulk_save_objects(new_question_categories)
+    else:
+        print "nothing to add"
+
+    session.commit()
+    return
 
 
 def add_category(session, login_session, category_name):

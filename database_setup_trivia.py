@@ -4,6 +4,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 # from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
+# import logging
+# logging.basicConfig()
+# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 Base = declarative_base()
 
@@ -57,6 +60,8 @@ class Question(Base):
     )
 
     answers = relationship("Answer", backref="question")
+
+    categories = relationship("QuestionCategoryMap", backref="question")
 
     user = relationship(User)
 

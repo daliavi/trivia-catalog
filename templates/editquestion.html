@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block head %}
+
+{% endblock %}
+
+{% block title %}Edit Question{% endblock %}
+
+{% block content %}
+<h3>Question to edit:</h3>
+
+<form action="{{url_for('edit_question', question_id=question.id)}}" method = 'post'>
+    <p>Question:</p>
+    <input type = 'text' size = '100' name ='question' value="{{ question.text }}">
+    {% for a in question.answers |sort(attribute='is_correct', reverse = True) %}
+        {%- if a.is_correct == True -%}
+            <br><br>
+            <p>Correct Answer:</p>
+            <input type = 'text' size = '30' name ='correct_answer' value="{{ a.text }}">
+            <input type = 'hidden' name ='correct_answer_id' value="{{ a.id }}">
+        {% else %}
+            <br><br>
+            <p>Alternative Answer:</p>
+            <input type = 'text' size = '30' name ='alt_answer_{{loop.index-1}}' value="{{ a.text }}">
+            <input type = 'hidden' name ='alt_answer_{{loop.index-1}}_id' value="{{ a.id }}">
+        {% endif %}
+    {% endfor %}
+    <br><br>
+
+    <p>Categories:</p>
+    <select size="10" multiple name="categories">
+    {% for i in categories %}
+        {%- if i.id|string in question.categories|map(attribute='category_id')|join(', ')  -%}
+            <option value={{i.id}} selected="selected">{{i.name}}</option>
+        {% else %}
+            <option value={{i.id}}>{{i.name}}</option>
+        {% endif %}
+    {% endfor %}
+    </select>
+
+    <br>
+    <br>
+    <input type = 'submit' name="submit" value = 'Update'>
+    <input type = 'submit' name="submit" value = 'Cancel'>
+</form>
+
+
+{% endblock %}
