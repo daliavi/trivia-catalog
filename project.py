@@ -1,8 +1,10 @@
+from collections import namedtuple
+
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import service
 import logging
 
-#for oauth implementation:
+# for oauth implementation:
 from flask import session as login_session
 import random, string
 from oauth2client.client import flow_from_clientsecrets
@@ -18,8 +20,6 @@ CLIENT_ID = json.loads(
 
 app = Flask(__name__)
 
-session = service.get_db_session()
-
 
 # registering custom filter for jinja
 @app.template_filter('shuffle')
@@ -30,6 +30,17 @@ def reverse_filter(s):
         return result
     except:
         return s
+
+
+@app.context_processor
+def inject_user():
+    if 'username' not in login_session:
+        print "return nothing"
+        return dict(user="")
+    else:
+        print "return user"
+        return dict(user=login_session['username'])
+
 
 # creating anti-forgery state token
 @app.route('/login')
@@ -195,7 +206,7 @@ def gconnect():
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
 
-    user_id = service.getUserID(session=session, email=login_session['email'])
+    user_id = service.getUserID(db_session=session, email=login_session['email'])
     if not user_id:
         user_id = service.createUser(login_session, session)
 
@@ -249,31 +260,31 @@ def gdisconnect():
 #Test engpoint to return users
 @app.route('/users/JSON')
 def usersJSON():
-    users = service.get_all_users(session=session)
+    users = service.get_all_users()
     return jsonify(Users=[i.serialize for i in users])
 
 #Test engpoint to return all questions
 @app.route('/questions/JSON')
 def questionsJSON():
-    questions = service.get_all_questions(session=session)
+    questions = service.get_all_questions()
     return jsonify(Questions=[i.serialize for i in questions])
 
 #Test engpoint to return all categories
 @app.route('/categories/JSON')
 def categoriesJSON():
-    categories = service.get_all_categories(session=session)
+    categories = service.get_all_categories()
     return jsonify(Categories=[i.serialize for i in categories])
 
 #Test engpoint to return all questions
 @app.route('/answers/JSON')
 def answersJSON():
-    answers = service.get_all_answers(session=session)
+    answers = service.get_all_answers()
     return jsonify(Answers=[i.serialize for i in answers])  # Test engpoint to return all questions
 
 #Test engpoint to return all category-question mappings
 @app.route('/mapping/JSON')
 def categoryMappingJSON():
-    mapping = service.get_all_mapping(session=session)
+    mapping = service.get_all_mapping()
     return jsonify(Category_mapping=[i.serialize for i in mapping])
 
 #Test engpoint to test
@@ -290,7 +301,6 @@ def new_question():
         return redirect('/login')
     if request.method == 'POST':
         service.add_question(
-            session=session,
             login_session=login_session,
             question=request.form['question'],
             correct_answer=request.form['correct_answer'],
@@ -302,7 +312,7 @@ def new_question():
         flash('New question created!')
         return redirect('/')
     else:  # if received GET
-        categories = service.get_all_categories(session=session)
+        categories = service.get_all_categories()
         return render_template('newquestion.html', categories=categories)
 
 
@@ -312,7 +322,6 @@ def new_category():
         return redirect('/login')
     if request.method == 'POST':
         service.add_category(
-            session=session,
             login_session=login_session,
             category_name=request.form['category_name']
         )
@@ -323,20 +332,18 @@ def new_category():
         categories = {'biol': '1', 'hist':'2', 'astr':'5'}
         return render_template('newcategory.html', categories=categories)
 
-
+@app.route('/main')
 @app.route('/', methods=['GET', 'POST'])
 def main():
-    if 'username' not in login_session:
-        return redirect('/login')
     if request.method == 'POST':
-        pass
+        if 'username' not in login_session:
+            return redirect('/login')
     else:  # if received GET
-        # TODO get category dictionary
-        # categories = {'biol': '1', 'hist': '2', 'astr': '5'}
-        questions = service.get_all_questions(session=session)
-        categories = service.get_all_categories(session=session)
+        questions = service.get_all_questions()
+        categories = service.get_all_categories()
         return render_template('main.html',
-                               categories=categories, questions=questions)
+                               categories=categories,
+                               questions=questions)
 
 
 #  how to build URL like /category/<int:category_id>/questions ???
@@ -348,10 +355,9 @@ def questions_by_category(category_id):
         pass
     else:  # if received GET
         questions = service.get_questions_by_category(
-            session=session,
             category_id=category_id
         )
-        categories = service.get_all_categories(session=session)
+        categories = service.get_all_categories()
         return render_template('main.html',
                                categories=categories,
                                questions=questions)
@@ -364,7 +370,6 @@ def delete_question(question_id):
     if request.method == 'POST':
         if request.form['submit'] == 'Delete':
             service.delete_question(
-                session=session,
                 question_id=question_id
             )
             flash('The question was deleted!')
@@ -373,43 +378,57 @@ def delete_question(question_id):
 
     else:  # if received GET
         question = service.get_question_by_id(
-            session=session,
             question_id=question_id
         )
         return render_template('deletequestion.html',
                                question=question)
 
 
+#QuestionBundle = namedtuple('QuestionBundle', 'question answers categories')
 @app.route('/question/edit/<int:question_id>', methods=['GET', 'POST'])
 def edit_question(question_id):
     if 'username' not in login_session:
         return redirect('/login')
     if request.method == 'POST':
         if request.form['submit'] == 'Update':
-            service.update_question(
-                session=session,
-                question_id=question_id,
-                question_text=request.form['question'],
-                correct_answer_id=request.form['correct_answer_id'],
-                correct_answer=request.form['correct_answer'],
-                alt_answer_1=request.form['alt_answer_1'],
-                alt_answer_1_id=request.form['alt_answer_1_id'],
-                alt_answer_2=request.form['alt_answer_2'],
-                alt_answer_2_id=request.form['alt_answer_2_id'],
-                alt_answer_3=request.form['alt_answer_3'],
-                alt_answer_3_id=request.form['alt_answer_3_id'],
+            question = (
+                question_id,
+                request.form['question']
+            )
+            answers = [
+                (
+                    request.form['correct_answer_id'],
+                    request.form['correct_answer']
+                ),
+                (
+                    request.form['alt_answer_1_id'],
+                    request.form['alt_answer_1']
+                ),
+                (
+                    request.form['alt_answer_2_id'],
+                    request.form['alt_answer_2']
+                ),
+                (
+                    request.form['alt_answer_3_id'],
+                    request.form['alt_answer_3']
+                )
+            ]
+
+            service.edit_question(
+                question=question,
+                answers=answers,
                 categories=request.form.getlist('categories')
             )
+
             flash('The question was updated!')
 
         return redirect('/')
 
     else:  # if received GET
         question = service.get_question_by_id(
-            session=session,
             question_id=question_id
         )
-        categories = service.get_all_categories(session=session)
+        categories = service.get_all_categories()
         return render_template('editquestion.html',
                                question=question,
                                categories=categories)

@@ -10,59 +10,60 @@ def get_db_session():
     Session = sessionmaker(bind=engine)
     return Session()
 
+db_session = get_db_session()
 
-def createUser(login_session, session):
+def createUser(login_session):
     newUser = User(
         name=login_session['username'],
         email=login_session['email'],
         picture=login_session['picture']
     )
-    session.add(newUser)
-    session.commit()
-    user = session.query(User).filter_by(email=login_session['email']).one()
+    db_session.add(newUser)
+    db_session.commit()
+    user = db_session.query(User).filter_by(email=login_session['email']).one()
     return user.id
 
 
-def getUserInfo(session, user_id):
-    user = session.query(User).filter_by(id = user_id).one()
+def getUserInfo(user_id):
+    user = db_session.query(User).filter_by(id = user_id).one()
     return user
 
 
-def getUserID(session, email):
+def getUserID(email):
     try:
-        user = session.query(User).filter_by(email=email).one()
+        user = db_session.query(User).filter_by(email=email).one()
         return user.id
     except:
         return None
 
 
-def get_all_users(session):
-    all_users = session.query(User).all()
+def get_all_users():
+    all_users = db_session.query(User).all()
     return all_users
 
 
-def get_all_questions(session):
-    all_questions = session.query(Question).all()
+def get_all_questions():
+    all_questions = db_session.query(Question).all()
     return all_questions
 
 
-def get_all_categories(session):
-    all_categories = session.query(Category).all()
+def get_all_categories():
+    all_categories = db_session.query(Category).all()
     return all_categories
 
 
-def get_all_answers(session):
-    all_answers = session.query(Answer).all()
+def get_all_answers():
+    all_answers = db_session.query(Answer).all()
     return all_answers
 
 
-def get_all_mapping(session):
-    all_mapping = session.query(QuestionCategoryMap).all()
+def get_all_mapping():
+    all_mapping = db_session.query(QuestionCategoryMap).all()
     return all_mapping
 
 
-def get_questions_by_category(session, category_id):
-    questions = (session.query(Question)
+def get_questions_by_category(category_id):
+    questions = (db_session.query(Question)
                  .join(QuestionCategoryMap)
                  .filter(QuestionCategoryMap.category_id == category_id)
                  ).all()
@@ -70,8 +71,8 @@ def get_questions_by_category(session, category_id):
     return questions
 
 
-def get_question_by_id(session, question_id):
-    question = session.query(Question).filter_by(id=question_id).one()
+def get_question_by_id(question_id):
+    question = db_session.query(Question).filter_by(id=question_id).one()
     return question
 
 
@@ -101,19 +102,18 @@ def get_all_data():
     return my_dict
 
 
-def add_question(
-        session, login_session, question, correct_answer,
+def add_question(login_session, question, correct_answer,
         alt_answer_1, alt_answer_2, alt_answer_3, categories):
     #get user id
-    user = session.query(User).filter_by(email=login_session['email']).one()
+    user = db_session.query(User).filter_by(email=login_session['email']).one()
 
     #save the question and return question ID
     question = Question(
         text=question,
         created_by=user.id
     )
-    session.add(question)
-    session.flush()
+    db_session.add(question)
+    db_session.flush()
 
     if question.id:
         #save the answers
@@ -154,9 +154,9 @@ def add_question(
                 )
             )
 
-        session.bulk_save_objects(answers)  # needs sqlalchemy version 1.0 or higher
-        session.bulk_save_objects(question_categories)
-        session.commit()
+        db_session.bulk_save_objects(answers)  # needs sqlalchemy version 1.0 or higher
+        db_session.bulk_save_objects(question_categories)
+        db_session.commit()
 
         return question
     else:
@@ -164,84 +164,70 @@ def add_question(
         return None
 
 
-def update_question(session, question_id, question_text, correct_answer, correct_answer_id,
-                    alt_answer_1, alt_answer_1_id,
-                    alt_answer_2, alt_answer_2_id,
-                    alt_answer_3, alt_answer_3_id, categories):
+def edit_question(question, answers, categories):
+    q = db_session.query(Question).filter_by(id=question[0]).one()
+    q.text = question[1]
 
-    # updating the question
-    question = session.query(Question).filter_by(id=question_id).one()
-    question.text = question_text
-
-    # updating the answers
-    answer_correct = session.query(Answer).filter_by(id=correct_answer_id).one()
-    answer_correct.text = correct_answer
-
-    answer_alt_1 = session.query(Answer).filter_by(id=alt_answer_1_id).one()
-    answer_alt_1.text = alt_answer_1
-
-    answer_alt_2 = session.query(Answer).filter_by(id=alt_answer_2_id).one()
-    answer_alt_2.text = alt_answer_2
-
-    answer_alt_3 = session.query(Answer).filter_by(id=alt_answer_3_id).one()
-    answer_alt_3.text = alt_answer_3
+    for a in answers:
+        db_session.query(Answer).filter_by(id=a[0]).one().text = a[1]
 
     # updating categories of the question
-    current_cat = [u.category_id for u in session.query(QuestionCategoryMap.category_id).filter_by(
-        question_id=question_id)]
+    cats_from_db = [c.category_id for c in db_session.query(QuestionCategoryMap.category_id).filter_by(
+        question_id=question[0])]
 
     # new categories come in a list of strings, need to convert to int
-    new_cat = map(int, categories)
+    cats_new = map(int, categories)
 
     # finding categories in either current or new list, but not in both
-    items = set(current_cat) ^ set(new_cat)
+    cats_to_update = set(cats_from_db) ^ set(cats_new)
 
     # creating lists of categories to remove and to add
-    cat_to_remove = [i for i in items if (i in current_cat)]
-    cat_to_add = [i for i in items if (i in new_cat)]
+    cats_to_remove = [c for c in cats_to_update if (c in cats_from_db)]
+    cats_to_add = [c for c in cats_to_update if (c in cats_new)]
 
-    if cat_to_remove:
-        session.query(QuestionCategoryMap).filter(and_(
-            QuestionCategoryMap.question_id == question_id,
-            QuestionCategoryMap.category_id.in_(cat_to_remove)
+    if cats_to_remove:
+        db_session.query(QuestionCategoryMap).filter(and_(
+            QuestionCategoryMap.question_id == question[0],
+            QuestionCategoryMap.category_id.in_(cats_to_remove)
             )).delete(synchronize_session='fetch')
     else:
         print "nothing to remove"
 
-    if cat_to_add:
+    if cats_to_add:
         new_question_categories = []
-        for i in cat_to_add:
+        for i in cats_to_add:
             new_question_categories.append(
                 QuestionCategoryMap(
                     category_id=i,
-                    question_id=question.id
+                    question_id=question[0]
                 )
             )
-        session.bulk_save_objects(new_question_categories)
+        db_session.bulk_save_objects(new_question_categories)
     else:
         print "nothing to add"
 
-    session.commit()
+    db_session.commit()
+
     return
 
 
-def add_category(session, login_session, category_name):
+def add_category(login_session, category_name):
     # get user id
-    user = session.query(User).filter_by(email=login_session['email']).one()
+    user = db_session.query(User).filter_by(email=login_session['email']).one()
 
     # save the category
     category = Category(
         name=category_name,
         created_by=user.id,
     )
-    session.add(category)
-    session.commit()
+    db_session.add(category)
+    db_session.commit()
     print "category id: " + str(category.id)
     return category
 
 
-def delete_question(session, question_id):
-    question = session.query(Question).filter_by(id=question_id).one()
-    session.delete(question)
-    session.commit()
+def delete_question(question_id):
+    question = db_session.query(Question).filter_by(id=question_id).one()
+    db_session.delete(question)
+    db_session.commit()
     return
