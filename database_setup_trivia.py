@@ -7,8 +7,15 @@ from sqlalchemy import create_engine
 # import logging
 # logging.basicConfig()
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+import sqlalchemy as sa
 
 Base = declarative_base()
+
+
+question_category_association = sa.Table('QuestionCategoryAss', Base.metadata,
+    Column('id', Integer, primary_key=True),
+    Column('category_id', Integer, ForeignKey('category.id')),
+    Column('question_id', Integer, ForeignKey('question.id')))
 
 
 class User(Base):
@@ -59,9 +66,14 @@ class Question(Base):
         Integer, ForeignKey('user.id')
     )
 
-    answers = relationship("Answer", backref="question")
+    answers = relationship("Answer", backref="question", cascade="all, delete-orphan")
 
-    categories = relationship("QuestionCategoryMap", backref="question")
+    # categories = relationship("QuestionCategoryMap", backref="question")
+
+    categories = relationship(
+        "Category",
+        secondary=question_category_association,
+        back_populates="questions")
 
     user = relationship(User)
 
@@ -131,6 +143,11 @@ class Category(Base):
     )
 
     user = relationship(User)
+
+    questions = relationship(
+        "Question",
+        secondary=question_category_association,
+        back_populates="categories")
 
     @property
     def serialize(self):

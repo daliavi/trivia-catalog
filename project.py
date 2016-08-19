@@ -35,10 +35,8 @@ def reverse_filter(s):
 @app.context_processor
 def inject_user():
     if 'username' not in login_session:
-        print "return nothing"
         return dict(user="")
     else:
-        print "return user"
         return dict(user=login_session['username'])
 
 
@@ -102,9 +100,9 @@ def fbconnect():
     login_session['picture'] = data["data"]["url"]
 
     # see if user exists
-    user_id = service.getUserID(session, login_session['email'])
+    user_id = service.getUserID(login_session['email'])
     if not user_id:
-        user_id = service.createUser(login_session, session)
+        user_id = service.createUser(login_session)
     login_session['user_id'] = user_id
 
     output = ''
@@ -206,9 +204,9 @@ def gconnect():
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
 
-    user_id = service.getUserID(db_session=session, email=login_session['email'])
+    user_id = service.getUserID(email=login_session['email'])
     if not user_id:
-        user_id = service.createUser(login_session, session)
+        user_id = service.createUser(login_session)
 
     login_session['user_id'] = user_id
 
@@ -281,32 +279,41 @@ def answersJSON():
     answers = service.get_all_answers()
     return jsonify(Answers=[i.serialize for i in answers])  # Test engpoint to return all questions
 
-#Test engpoint to return all category-question mappings
-@app.route('/mapping/JSON')
-def categoryMappingJSON():
-    mapping = service.get_all_mapping()
-    return jsonify(Category_mapping=[i.serialize for i in mapping])
-
-#Test engpoint to test
-@app.route('/test/JSON')
+#Returns all the categories and questions assigned to them
+@app.route('/alldata/JSON')
 def testJSON():
-    my_dict = service.get_all_data()
-
-    return jsonify(my_dict)
+    all_data = service.get_all_data()
+    return jsonify(all_data)
 
 
 @app.route('/question/new/', methods=['GET', 'POST'])
 def new_question():
-    if 'username' not in login_session:
+    if ('username' or 'email') not in login_session:
         return redirect('/login')
     if request.method == 'POST':
+        answers = [
+            (
+                request.form['correct_answer'],
+                True
+            ),
+            (
+                request.form['alt_answer_1'],
+                False
+            ),
+            (
+                request.form['alt_answer_2'],
+                False
+            ),
+            (
+                request.form['alt_answer_3'],
+                False
+            )
+        ]
+
         service.add_question(
             login_session=login_session,
             question=request.form['question'],
-            correct_answer=request.form['correct_answer'],
-            alt_answer_1=request.form['alt_answer_1'],
-            alt_answer_2=request.form['alt_answer_2'],
-            alt_answer_3=request.form['alt_answer_3'],
+            answers=answers,
             categories=request.form.getlist('categories')
         )
         flash('New question created!')
@@ -318,7 +325,7 @@ def new_question():
 
 @app.route('/category/new/', methods=['GET', 'POST'])
 def new_category():
-    if 'username' not in login_session:
+    if ('username' or 'email') not in login_session:
         return redirect('/login')
     if request.method == 'POST':
         service.add_category(
@@ -333,12 +340,9 @@ def new_category():
         return render_template('newcategory.html', categories=categories)
 
 @app.route('/main')
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET'])
 def main():
-    if request.method == 'POST':
-        if 'username' not in login_session:
-            return redirect('/login')
-    else:  # if received GET
+    if request.method == 'GET':
         questions = service.get_all_questions()
         categories = service.get_all_categories()
         return render_template('main.html',
@@ -347,13 +351,9 @@ def main():
 
 
 #  how to build URL like /category/<int:category_id>/questions ???
-@app.route('/category/<int:category_id>', methods=['GET', 'POST'])
+@app.route('/category/<int:category_id>', methods=['GET'])
 def questions_by_category(category_id):
-    if 'username' not in login_session:
-        return redirect('/login')
-    if request.method == 'POST':
-        pass
-    else:  # if received GET
+    if request.method == 'GET':
         questions = service.get_questions_by_category(
             category_id=category_id
         )
@@ -365,15 +365,18 @@ def questions_by_category(category_id):
 
 @app.route('/question/delete/<int:question_id>', methods=['GET', 'POST'])
 def delete_question(question_id):
-    if 'username' not in login_session:
+    if ('username' or 'email') not in login_session:
         return redirect('/login')
     if request.method == 'POST':
         if request.form['submit'] == 'Delete':
-            service.delete_question(
+            error_msg = service.delete_question(
+                user_email=login_session['email'],
                 question_id=question_id
             )
-            flash('The question was deleted!')
-
+            if error_msg:
+                flash(error_msg)
+            else:
+                flash('The question was deleted!')
         return redirect('/')
 
     else:  # if received GET
@@ -384,10 +387,10 @@ def delete_question(question_id):
                                question=question)
 
 
-#QuestionBundle = namedtuple('QuestionBundle', 'question answers categories')
 @app.route('/question/edit/<int:question_id>', methods=['GET', 'POST'])
 def edit_question(question_id):
-    if 'username' not in login_session:
+    if ('username' or 'email') not in login_session:
+        print login_session
         return redirect('/login')
     if request.method == 'POST':
         if request.form['submit'] == 'Update':
@@ -414,14 +417,17 @@ def edit_question(question_id):
                 )
             ]
 
-            service.edit_question(
+            error_msg = service.edit_question(
+                user_email=login_session['email'],
                 question=question,
                 answers=answers,
                 categories=request.form.getlist('categories')
             )
 
+        if error_msg:
+            flash(error_msg)
+        else:
             flash('The question was updated!')
-
         return redirect('/')
 
     else:  # if received GET

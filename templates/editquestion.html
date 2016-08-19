@@ -28,11 +28,11 @@
 
     <p>Categories:</p>
     <select size="10" multiple name="categories">
-    {% for i in categories %}
-        {%- if i.id|string in question.categories|map(attribute='category_id')|join(', ')  -%}
-            <option value={{i.id}} selected="selected">{{i.name}}</option>
+    {% for c in categories %}
+        {%- if c in question.categories  -%}
+            <option value={{c.id}} selected="selected">{{c.name}}</option>
         {% else %}
-            <option value={{i.id}}>{{i.name}}</option>
+            <option value={{c.id}}>{{c.name}}</option>
         {% endif %}
     {% endfor %}
     </select>

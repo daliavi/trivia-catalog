@@ -1,7 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database_setup_trivia import Base, User, Question, Answer, Category, QuestionCategoryMap
-from sqlalchemy import and_
+from database_setup_trivia import Base, User, Question, Answer, Category, question_category_association
 
 
 def get_db_session():
@@ -11,6 +10,7 @@ def get_db_session():
     return Session()
 
 db_session = get_db_session()
+
 
 def createUser(login_session):
     newUser = User(
@@ -57,18 +57,9 @@ def get_all_answers():
     return all_answers
 
 
-def get_all_mapping():
-    all_mapping = db_session.query(QuestionCategoryMap).all()
-    return all_mapping
-
-
 def get_questions_by_category(category_id):
-    questions = (db_session.query(Question)
-                 .join(QuestionCategoryMap)
-                 .filter(QuestionCategoryMap.category_id == category_id)
-                 ).all()
-
-    return questions
+    category = db_session.query(Category).filter_by(id=category_id).one()
+    return category.questions
 
 
 def get_question_by_id(question_id):
@@ -76,34 +67,25 @@ def get_question_by_id(question_id):
     return question
 
 
+def answer_helper(q):
+    r = q.serialize
+    r.update({'Answers': [a.serialize for a in q.answers]})
+    return r
+
+
+def question_helper(c):
+    r = c.serialize
+    r.update({'Questions': [answer_helper(q) for q in c.questions]})
+    return r
+
+
 def get_all_data():
-    answer_list = [
-        {'id': '123', 'text': 'Vilnius', 'is_correct': 'True'},
-        {'id': '123', 'text': 'Minsk', 'is_correct': 'False'},
-        {'id': '123', 'text': 'Riga', 'is_correct': 'False'},
-        {'id': '123', 'text': 'Talin', 'is_correct': 'False'},
-
-    ]
-
-    question_list = [
-        {'id': '321', 'text': 'What is the capital of Lithuania_1?', 'created_by': '123', 'answers': answer_list},
-        {'id': '321', 'text': 'What is the capital of Lithuania_2?', 'created_by': '123', 'answers': answer_list},
-        {'id': '321', 'text': 'What is the capital of Lithuania_3?', 'created_by': '123', 'answers': answer_list},
-    ]
-
-    category_list = [
-        {'id': '123', 'name': 'Biology', 'created_by': '321', 'questions': question_list},
-        {'id': '123', 'name': 'History', 'created_by': '321', 'questions': question_list},
-        {'id': '123', 'name': 'Maths', 'created_by': '321', 'questions': question_list},
-    ]
-
-    my_dict = {'categories': category_list}
-
-    return my_dict
+    categories = db_session.query(Category).all()
+    category_list = [question_helper(c) for c in categories]
+    return {'Categories': category_list}
 
 
-def add_question(login_session, question, correct_answer,
-        alt_answer_1, alt_answer_2, alt_answer_3, categories):
+def add_question(login_session, question, answers, categories):
     #get user id
     user = db_session.query(User).filter_by(email=login_session['email']).one()
 
@@ -119,43 +101,39 @@ def add_question(login_session, question, correct_answer,
         #save the answers
         answers = [
             Answer(
-                text=correct_answer,
-                is_correct=True,
+                text=answers[0][0],
+                is_correct=answers[0][1],
                 created_by=user.id,
                 question_id=question.id
             ),
             Answer(
-                text=alt_answer_1,
-                is_correct=False,
+                text=answers[1][0],
+                is_correct=answers[1][1],
                 created_by=user.id,
                 question_id=question.id
             ),
             Answer(
-                text=alt_answer_2,
-                is_correct=False,
+                text=answers[2][0],
+                is_correct=answers[2][1],
                 created_by=user.id,
                 question_id=question.id
             ),
             Answer(
-                text=alt_answer_3,
-                is_correct=False,
+                text=answers[3][0],
+                is_correct=answers[3][1],
                 created_by=user.id,
                 question_id=question.id
             )
 
         ]
-        question_categories = []
 
+        #assigning the question to category(ies)
         for i in categories:
-            question_categories.append(
-                QuestionCategoryMap(
-                    category_id=i,
-                    question_id=question.id
-                )
-            )
+            category = db_session.query(Category).filter_by(id=i).one()
+            question.categories.append(category)
+            db_session.add(question)
 
-        db_session.bulk_save_objects(answers)  # needs sqlalchemy version 1.0 or higher
-        db_session.bulk_save_objects(question_categories)
+        db_session.bulk_save_objects(answers)  # NOTE!!! bulk operation needs sqlalchemy version 1.0 or higher
         db_session.commit()
 
         return question
@@ -164,51 +142,64 @@ def add_question(login_session, question, correct_answer,
         return None
 
 
-def edit_question(question, answers, categories):
+def edit_question(user_email, question, answers, categories):
+    error_msg = ''
+    user_id = getUserID(user_email)
     q = db_session.query(Question).filter_by(id=question[0]).one()
-    q.text = question[1]
-
-    for a in answers:
-        db_session.query(Answer).filter_by(id=a[0]).one().text = a[1]
-
-    # updating categories of the question
-    cats_from_db = [c.category_id for c in db_session.query(QuestionCategoryMap.category_id).filter_by(
-        question_id=question[0])]
-
-    # new categories come in a list of strings, need to convert to int
-    cats_new = map(int, categories)
-
-    # finding categories in either current or new list, but not in both
-    cats_to_update = set(cats_from_db) ^ set(cats_new)
-
-    # creating lists of categories to remove and to add
-    cats_to_remove = [c for c in cats_to_update if (c in cats_from_db)]
-    cats_to_add = [c for c in cats_to_update if (c in cats_new)]
-
-    if cats_to_remove:
-        db_session.query(QuestionCategoryMap).filter(and_(
-            QuestionCategoryMap.question_id == question[0],
-            QuestionCategoryMap.category_id.in_(cats_to_remove)
-            )).delete(synchronize_session='fetch')
+    if not q.created_by == user_id:
+        error_msg = "The question could not be updated"
+        return error_msg
     else:
-        print "nothing to remove"
+        q.text = question[1]
+        for a in answers:
+            db_session.query(Answer).filter_by(id=a[0]).one().text = a[1]
 
-    if cats_to_add:
-        new_question_categories = []
-        for i in cats_to_add:
-            new_question_categories.append(
-                QuestionCategoryMap(
-                    category_id=i,
-                    question_id=question[0]
-                )
-            )
-        db_session.bulk_save_objects(new_question_categories)
-    else:
-        print "nothing to add"
+        # updating categories of the question
 
-    db_session.commit()
+        #get ids of the categories
+        cats_from_db = [c.id for c in q.categories]
 
-    return
+        # ids of the new categories come in a list of strings, need to convert to int
+        cats_new = map(int, categories)
+
+        # finding category ids in either current or new list, but not in both
+        cats_to_update = set(cats_from_db) ^ set(cats_new)
+
+        # creating lists of category ids to remove and to add
+        cats_to_remove = [c for c in cats_to_update if (c in cats_from_db)]
+        cats_to_add = [c for c in cats_to_update if (c in cats_new)]
+
+        print "cats_from_db:"
+        print cats_from_db
+        print "cats_new"
+        print cats_new
+        print "cats_to_update"
+        print cats_to_update
+        print "cats_to_remove"
+        print cats_to_remove
+        print "cats_to_add"
+        print cats_to_add
+
+        if cats_to_remove:
+            for i in cats_to_remove:
+                print "in the loop: " + str(i)
+                category = db_session.query(Category).filter_by(id=i).one()
+                q.categories.remove(category)
+                db_session.add(q)
+        else:
+            print "nothing to remove"
+
+        if cats_to_add:
+            # assigning new category(ies) to the question
+            for i in cats_to_add:
+                category = db_session.query(Category).filter_by(id=i).one()
+                q.categories.append(category)
+                db_session.add(q)
+        else:
+            print "nothing to add"
+
+        db_session.commit()
+        return error_msg
 
 
 def add_category(login_session, category_name):
@@ -226,8 +217,15 @@ def add_category(login_session, category_name):
     return category
 
 
-def delete_question(question_id):
+def delete_question(user_email, question_id):
+    error_msg = ''
+    user_id = getUserID(user_email)
     question = db_session.query(Question).filter_by(id=question_id).one()
-    db_session.delete(question)
-    db_session.commit()
-    return
+    if not question.created_by == user_id:
+        error_msg = "The questions could not be deleted"
+        return error_msg
+    else:
+        db_session.delete(question)
+        db_session.commit()
+        return error_msg
+
