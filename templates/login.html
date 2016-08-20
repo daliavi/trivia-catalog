@@ -1,31 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap-social.css') }}">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='styles.css') }}">
+    <title>Login</title>
     <!--LOAD PRE-REQUISITES FOR GOOGLE SIGN IN -->
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js">
     </script>
     <script src="//apis.google.com/js/platform.js?onload=start"> </script>
     <!-- END PRE-REQUISITES FOR GOOGLE SIGN IN -->
 
-    <meta charset="UTF-8">
-    <title>Login</title>
 </head>
+
+<style>
+
+html,body {
+  height:100%;
+  width:100%;
+  margin:0;
+}
+body {
+  display:flex;
+}
+.container {
+  margin:auto;/* nice thing of auto margin if display:flex; it center both horizontal and vertical :) */
+}
+
+.card {
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+}
+
+.card:hover {
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+}
+
+.container2 {
+    padding: 2px 16px;
+}
+
+#card{width: 300px; height: 300px; margin: 0 auto;}
+</style>
+
+
 <body>
+
 <!-- GOOGLE PLUS SIGN IN BUTTON-->
-          <div id="signInButton">
-          <span class="g-signin"
-            data-scope="openid email"
-            data-clientid="193796381082-v4h1jmbd88e0ak19tlqelgpafceiuoh9.apps.googleusercontent.com"
-            data-redirecturi="postmessage"
-            data-accesstype="offline"
-            data-cookiepolicy="single_host_origin"
-            data-callback="signInCallback"
-            data-approvalprompt="force">
-          </span>
-        </div>
+<div class="container" align="center">
+<div class="card" id="card">
+    <br><br>
+    <h4><b>Log in</b></h4>
+    <p>To access awesome Trivia questions</p>
+    <fb:login-button scope="public_profile,email" onlogin="sendTokenToServer();">
+        <a href='javascript:sendTokenToServer()'>Login with Facebook</a>
+    </fb:login-button>
+
+    <br> <br>
+
+    <div id="signInButton">
+    <span class="g-signin"
+        data-scope="openid email"
+        data-clientid="193796381082-v4h1jmbd88e0ak19tlqelgpafceiuoh9.apps.googleusercontent.com"
+        data-redirecturi="postmessage"
+        data-accesstype="offline"
+        data-cookiepolicy="single_host_origin"
+        data-callback="signInCallback"
+        data-approvalprompt="force">
+    </span>
+
+    <div id="result"></div>
+</div>
+
+</div>
+
+
+
 <!--END GOOGLE PLUS SIGN IN BUTTON -->
 
-<div id="result"></div>
+
 
 <script>
 function signInCallback(authResult) {
@@ -44,7 +100,7 @@ function signInCallback(authResult) {
         if (result) {
           $('#result').html('Login Successful!</br>'+ result + '</br>Redirecting...')
          setTimeout(function() {
-          window.location.href = "/users/JSON";
+          window.location.href = "/main";
          }, 4000);
 
       } else if (authResult['error']) {
@@ -69,6 +125,7 @@ function signInCallback(authResult) {
     version    : 'v2.2' // use version 2.2
   });
   };
+
   // Load the SDK asynchronously
   (function(d, s, id) {
     var js, fjs = d.getElementsByTagName(s)[0];
@@ -77,6 +134,7 @@ function signInCallback(authResult) {
     js.src = "//connect.facebook.net/en_US/sdk.js";
     fjs.parentNode.insertBefore(js, fjs);
   }(document, 'script', 'facebook-jssdk'));
+
   // Here we run a very simple test of the Graph API after login is
   // successful.  See statusChangeCallback() for when this call is made.
   function sendTokenToServer() {
@@ -96,7 +154,7 @@ function signInCallback(authResult) {
         if (result) {
           $('#result').html('Login Successful!</br>'+ result + '</br>Redirecting...')
          setTimeout(function() {
-          window.location.href = "/users/JSON";
+          window.location.href = "/main";
          }, 4000);
 
       } else {
@@ -110,17 +168,11 @@ function signInCallback(authResult) {
 </script>
 
 
-<button>
 
 
-          <fb:login-button scope="public_profile,email" onlogin="sendTokenToServer();">
-<a href='javascript:sendTokenToServer()'>Login with Facebook</a>
-
-</fb:login-button>
 
 
-        </button>
 <!--END FACEBOOK SIGN IN -->
-
+</div>
 </body>
 </html>

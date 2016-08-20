@@ -18,7 +18,13 @@
               <h1>Trivia Database</h1>
           </div>
           <div class="col-md-4">
-              <h1>Login</h1>
+              {% if user %}
+                <!--<span><p>Hello {{user}}</p></span>-->
+                <span><img src="{{picture}}" alt="{{user}}" style = "width: 30px; height: 30px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;" ></span>
+                <a href="{{ url_for('logout') }}">Logout</a>
+              {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+              {% endif %}
           </div>
 
       </div>

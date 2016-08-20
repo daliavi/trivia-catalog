@@ -37,12 +37,13 @@ def inject_user():
     if 'username' not in login_session:
         return dict(user="")
     else:
-        return dict(user=login_session['username'])
+        return dict(user=login_session['username'],
+                    picture=login_session['picture'])
 
 
 # creating anti-forgery state token
 @app.route('/login')
-def showLogin():
+def login():
     login_session.clear()
     state = ''.join(
         random.choice(string.ascii_uppercase + string.digits)
@@ -52,6 +53,17 @@ def showLogin():
     return render_template('login.html', STATE=state)
 
 
+@app.route('/logout')
+def logout():
+    if 'facebook_id' in login_session:
+        return redirect('/fbdisconnect')
+    elif 'gplus_id' in login_session:
+        return redirect('/gdisconnect')
+    else:
+        login_session.clear()
+        return redirect('/')
+
+
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
     if request.args.get('state') != login_session['state']:
@@ -59,10 +71,8 @@ def fbconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
     access_token = request.data
-    print "access token received %s " % access_token
 
-    app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
-        'web']['app_id']
+    app_id = json.loads(open('fb_client_secrets.json', 'r').read())['web']['app_id']
     app_secret = json.loads(
         open('fb_client_secrets.json', 'r').read())['web']['app_secret']
     url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
@@ -75,7 +85,6 @@ def fbconnect():
     # strip expire tag from access token
     token = result.split("&")[0]
 
-
     url = 'https://graph.facebook.com/v2.4/me?%s&fields=name,id,email' % token
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
@@ -87,7 +96,8 @@ def fbconnect():
     login_session['email'] = data["email"]
     login_session['facebook_id'] = data["id"]
 
-    # The token must be stored in the login_session in order to properly logout, let's strip out the information before the equals sign in our token
+    # The token must be stored in the login_session in order to properly logout,
+    # let's strip out the information before the equals sign in our token
     stored_token = token.split("=")[1]
     login_session['access_token'] = stored_token
 
@@ -106,13 +116,12 @@ def fbconnect():
     login_session['user_id'] = user_id
 
     output = ''
-    output += '<h1>Welcome, '
+    output += '<p3>Connecting as '
     output += login_session['username']
-
-    output += '!</h1>'
+    output += ' </p3>'
     output += '<img src="'
     output += login_session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    output += ' " style = "width: 30px; height: 30px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
 
     flash("Now logged in as %s" % login_session['username'])
     return output
@@ -127,13 +136,13 @@ def fbdisconnect():
     h = httplib2.Http()
     result = h.request(url, 'DELETE')[1]
     login_session.clear()
-    return "you have been logged out"
+    flash("You were logged out")
+    return redirect('/')
 
 
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
-    app.logger.info('Starting gconnect, Client id: %s' % CLIENT_ID)
     # Validate state token
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -211,14 +220,14 @@ def gconnect():
     login_session['user_id'] = user_id
 
     output = ''
-    output += '<h1>Welcome, '
+    output += '<p3>Connecting as '
     output += login_session['username']
-    output += '!</h1>'
+    output += ' </p3>'
     output += '<img src="'
     output += login_session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
-    flash("you are now logged in as %s" % login_session['username'])
-    print "done!"
+    output += ' " style = "width: 30px; height: 30px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+
+    flash("Now logged in as %s" % login_session['username'])
     return output
 
 
@@ -239,16 +248,9 @@ def gdisconnect():
     print 'result is '
     print result
     if result['status'] == '200':
-        # del login_session['access_token']
-        # del login_session['gplus_id']
-        # del login_session['username']
-        # del login_session['email']
-        # del login_session['picture']
-        # del login_session['user_id']
         login_session.clear()
-        response = make_response(json.dumps('Successfully disconnected.'), 200)
-        response.headers['Content-Type'] = 'application/json'
-        return response
+        flash("You were logged out")
+        return redirect('/')
     else:
         response = make_response(json.dumps('Failed to revoke token for given user.', 400))
         response.headers['Content-Type'] = 'application/json'
@@ -284,6 +286,12 @@ def answersJSON():
 def testJSON():
     all_data = service.get_all_data()
     return jsonify(all_data)
+
+
+@app.route('/login2', methods=['GET'])
+def login2():
+    if request.method == 'GET':
+        return render_template('login2.html')
 
 
 @app.route('/question/new/', methods=['GET', 'POST'])
