@@ -7,12 +7,20 @@
 
 {% block content %}
 
+<div class="container">
+<h4>Category details</h4>
+
+<div class="card_questions">
+
+
 <form action="{{url_for('new_category')}}" method = 'post'>
     <p>Category Name:</p>
     <input type = 'text' size = '60' name ='category_name'>
     <input type = 'submit' value = 'Create'>
 </form>
 
+</div>
+</div>
 
 <!--<script src="{{ url_for('static', filename='jquery.min.js') }}"></script>-->
 

@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href="https://fonts.googleapis.com/css?family=Lora|Roboto" rel="stylesheet">
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap.min.css') }}">
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='styles.css') }}">
     {% block head %}
@@ -11,28 +12,47 @@
     {% endblock %}
 </head>
 <body>
-<div class="container">
+<div class="jumbotron">
   <header>
       <div class="row">
           <div class="col-md-8">
-              <h1>Trivia Database</h1>
+              <h1 class="main_title left-margin"><a class="title_link" href="{{ url_for('main') }}">Trivia Catalog</a></h1>
           </div>
           <div class="col-md-4">
               {% if user %}
-                <!--<span><p>Hello {{user}}</p></span>-->
-                <span><img src="{{picture}}" alt="{{user}}" style = "width: 30px; height: 30px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;" ></span>
-                <a href="{{ url_for('logout') }}">Logout</a>
+                <img src="{{picture}}" alt="{{user}}" style = "width: 30px; height: 30px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;" >
+                <a class="btn" href="{{ url_for('logout') }}">Logout</a>
               {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
+                <a class="btn" href="{{ url_for('login') }}">Login</a>
               {% endif %}
           </div>
 
       </div>
   </header>
+<nav class="navbar">
+<div class="nav-btns">
+    <a class="btn_menu" href="{{ url_for('new_category') }}">Add Category</a>
+    <a class="btn_menu" href="{{ url_for('new_question') }}">Add Question</a>
 
-        {% block content %}
-        {% endblock %}
-        {% block footer %}
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+            {% for message in messages %}
+                <span class="messages">{{message}}</span>
+             {% endfor %}
+    {% endif %}
+    {% endwith %}
+</div>
+
+</nav>
+
+    {% block content %}
+    {% endblock %}
+    {% block footer %}
+    <div class="row">
+        <div class="col-md-12">
+            <p class="footer">(c) Dalia Vitkauskaite 2016</p>
+        </div>
+    </div>
 
         {% endblock %}
 </div>

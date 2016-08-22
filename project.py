@@ -1,4 +1,5 @@
-from collections import namedtuple
+import flask
+from flask.ext.seasurf import SeaSurf
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import service
@@ -19,6 +20,7 @@ CLIENT_ID = json.loads(
     open('client_secrets.json','r').read())['web']['client_id']
 
 app = Flask(__name__)
+
 
 
 # registering custom filter for jinja
@@ -432,11 +434,13 @@ def edit_question(question_id):
                 categories=request.form.getlist('categories')
             )
 
-        if error_msg:
-            flash(error_msg)
+            if error_msg:
+                flash(error_msg)
+            else:
+                flash('The question was updated!')
+            return redirect('/')
         else:
-            flash('The question was updated!')
-        return redirect('/')
+            return redirect('/')
 
     else:  # if received GET
         question = service.get_question_by_id(

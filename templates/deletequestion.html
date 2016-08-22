@@ -7,20 +7,27 @@
 {% block title %}Delet Question{% endblock %}
 
 {% block content %}
-<h3>Are you sure you want to delete this question?</h3>
-<form action="{{url_for('delete_question', question_id=question.id)}}" method = 'post'>
-    <ul>
+<div class="container">
+    <h4>Are you sure you want to delete this question?</h4>
+    <div class="card_questions">
+
+        <form action="{{url_for('delete_question', question_id=question.id)}}" method = 'post'>
+        <ul>
         <li>{{ question.text }}</li>
         <ol type="A">
         {% for a in question.answers %}
             <li>{{a.text}} </li>
         {% endfor %}
         </ol>
-    </ul>
+        </ul>
 
-    <input type = 'submit' name="submit" value = 'Delete'>
-    <input type = 'submit' name="submit" value = 'Cancel'>
+        <input type = 'submit' name="submit" value = 'Delete'>
+        <input type = 'submit' name="submit" value = 'Cancel'>
 </form>
+</div>
+
+    </div>
+
 
 <!--<script src="{{ url_for('static', filename='jquery.min.js') }}"></script>-->
 
