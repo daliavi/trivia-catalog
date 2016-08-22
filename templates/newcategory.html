@@ -14,6 +14,7 @@
 
 
 <form action="{{url_for('new_category')}}" method = 'post'>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <p>Category Name:</p>
     <input type = 'text' size = '60' name ='category_name'>
     <input type = 'submit' value = 'Create'>

@@ -12,6 +12,7 @@
 
 <div class="card_questions">
     <form action="{{url_for('edit_question', question_id=question.id)}}" method = 'post'>
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <p>Question:</p>
     <input type = 'text' size = '100' name ='question' value="{{ question.text }}">
     {% for a in question.answers |sort(attribute='is_correct', reverse = True) %}

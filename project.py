@@ -20,6 +20,7 @@ CLIENT_ID = json.loads(
     open('client_secrets.json','r').read())['web']['client_id']
 
 app = Flask(__name__)
+csrf = SeaSurf(app)
 
 
 
@@ -65,7 +66,7 @@ def logout():
         login_session.clear()
         return redirect('/')
 
-
+@csrf.exempt
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
     if request.args.get('state') != login_session['state']:
@@ -142,7 +143,7 @@ def fbdisconnect():
     return redirect('/')
 
 
-
+@csrf.exempt
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     # Validate state token
@@ -288,12 +289,6 @@ def answersJSON():
 def testJSON():
     all_data = service.get_all_data()
     return jsonify(all_data)
-
-
-@app.route('/login2', methods=['GET'])
-def login2():
-    if request.method == 'GET':
-        return render_template('login2.html')
 
 
 @app.route('/question/new/', methods=['GET', 'POST'])
