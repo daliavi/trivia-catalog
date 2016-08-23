@@ -27,7 +27,7 @@ To run the project on a virtual machine:
 - Upgrade SQLAlchemy if needed:
 - '$sudo pip install SQLAlchemy --upgrade'
 - Import Flask SeaSurf library
-- '$sudo pip install flask-seasurf'
-- to create the database in vagrant/catalog directory run '$python database_setup_trivia.py'
-- to start the project in vagrant/catalog directory run '$python project.py'
+- `$sudo pip install flask-seasurf`
+- to create the database in vagrant/catalog directory run `$python database_setup_trivia.py`
+- to start the project in vagrant/catalog directory run `$python project.py`
 - access the project on localhost:5000
