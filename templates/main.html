@@ -7,38 +7,31 @@
 
 {% block content %}
 
-
-
-<!--<div class="container">-->
-
-
 <div class="row">
 <div class="col-md-3">
     <div class="left-margin">
     <h4>Categories</h4>
-    <!--<a href="{{ url_for('new_category') }}">Add New Category</a>-->
 
     <div class="card_category">
     <a class="cat_all" href="{{ url_for('main') }}">All Categories</a>
     <br>
-
-        {% for i in categories %}
-            <a class="cat_list" href="{{ url_for('questions_by_category', category_id=i.id) }}">{{ i.name }}</a>
+    {% for i in categories %}
+        <a class="cat_list" href="{{ url_for('questions_by_category', category_id=i.id) }}">{{ i.name }}</a>
         <br>
-        {% endfor %}
+    {% endfor %}
     </div>
     </div>
 </div>
+
 <div class="col-md-9 ">
-
     <h4>Questions</h4>
-
-    <!--<a href="{{ url_for('new_question') }}">Add New Question</a>-->
-
     <div class="card_questions">
-    <ol>
-    {% for i in questions %}
-
+        {% if not questions: %}
+        <p>There are no questions assigned to this category</p>
+        <a href="{{ url_for('new_question') }}">Add Question</a>
+        {% endif %}
+        <ol>
+        {% for i in questions %}
         <li>{{i.text + ' '}}
             <a href="{{ url_for('edit_question', question_id=i.id) }}">Edit</a>
             <a href="{{ url_for('delete_question', question_id=i.id) }}">Delete</a>
@@ -48,13 +41,10 @@
             <li>{{a.text + ' '}} {%- if a.is_correct == True -%}  (correct) {% endif %} </li>
         {% endfor %}
         </ol>
-
-    {% endfor %}
-    </ol>
+        {% endfor %}
+        </ol>
+    </div>
 </div>
 </div>
-</div>
-<!--</div>-->
-
 
 {% endblock %}

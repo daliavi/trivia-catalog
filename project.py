@@ -1,10 +1,8 @@
 from flask.ext.seasurf import SeaSurf
 from werkzeug.utils import secure_filename
 import os
-
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import service
-import logging
 
 # for oauth implementation:
 from flask import session as login_session
@@ -27,55 +25,6 @@ csrf = SeaSurf(app)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
-
-
-@app.route('/user/edit', methods=['GET', 'POST'])
-def user_edit():
-    if request.method == 'POST':
-        if ('username' or 'email') not in login_session:
-            return redirect('/login')
-
-        if request.form['submit'] == 'Upload':
-            # check if the post request has the file part
-            if 'file' not in request.files:
-                flash('No file part')
-                return redirect('/user/edit')
-            file = request.files['file']
-            # if user does not select file, browser also
-            # submit a empty part without filename
-            if file.filename == '':
-                flash('No selected file')
-                return redirect('/user/edit')
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                user_id = service.getUserID(login_session['email'])
-                new_filename = str(user_id) + '.' + filename.rsplit('.', 1)[1]
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], new_filename))
-                file_path = UPLOAD_FOLDER.strip('.') + '/' + new_filename
-                service.user_picture_update(
-                    user_id=user_id,
-                    filepath=file_path)
-                flash('The image was successfuly uploaded')
-                return redirect('/')
-        if request.form['submit'] == 'Use':
-            user_id = service.getUserID(login_session['email'])
-            service.user_picture_update(
-                user_id=user_id,
-                filepath=login_session['picture'])
-            flash('The image was successfuly changed')
-            return redirect('/')
-        if request.form['submit'] == 'Cancel':
-            return redirect('/')
-
-    if request.method == 'GET':
-        if ('username' or 'email') not in login_session:
-            return redirect('/login')
-        user = service.getUserInfo(service.getUserID(login_session['email']))
-        return render_template('uploadpicture.html', user=user)
-
 # registering custom filter for jinja
 @app.template_filter('shuffle')
 def reverse_filter(s):
@@ -87,6 +36,7 @@ def reverse_filter(s):
         return s
 
 
+#  passing user data to base template
 @app.context_processor
 def inject_user():
     if 'username' not in login_session:
@@ -98,6 +48,7 @@ def inject_user():
                     session_picture=login_session['picture'])
 
 
+######oauth implementation start ###########
 # creating anti-forgery state token
 @app.route('/login')
 def login():
@@ -120,6 +71,7 @@ def logout():
         login_session.clear()
         return redirect('/')
 
+
 @csrf.exempt
 @app.route('/fbconnect', methods=['POST'])
 def fbconnect():
@@ -137,16 +89,12 @@ def fbconnect():
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
 
-    # Use token to get user info from API
-    userinfo_url = "https://graph.facebook.com/v2.4/me"
     # strip expire tag from access token
     token = result.split("&")[0]
 
     url = 'https://graph.facebook.com/v2.4/me?%s&fields=name,id,email' % token
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
-    # print "url sent for API access:%s"% url
-    # print "API JSON result: %s" % result
     data = json.loads(result)
     login_session['provider'] = 'facebook'
     login_session['username'] = data["name"]
@@ -166,19 +114,19 @@ def fbconnect():
 
     login_session['picture'] = data["data"]["url"]
 
-    # see if user exists
-    user_id = service.getUserID(login_session['email'])
+    # see if user exists in the DB, if not, add.
+    user_id = service.get_user_id(login_session['email'])
     if not user_id:
-        user_id = service.createUser(login_session)
+        user_id = service.create_user(login_session)
     login_session['user_id'] = user_id
 
     output = ''
     output += '<p3>Connecting as '
     output += login_session['username']
     output += ' </p3>'
-    output += '<img src="'
+    output += '<img class="user-photo" src="'
     output += login_session['picture']
-    output += ' " style = "width: 30px; height: 30px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    output += ' "> '
 
     flash("Now logged in as %s" % login_session['username'])
     return output
@@ -191,7 +139,6 @@ def fbdisconnect():
     access_token = login_session['access_token']
     url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id,access_token)
     h = httplib2.Http()
-    result = h.request(url, 'DELETE')[1]
     login_session.clear()
     flash("You were logged out")
     return redirect('/')
@@ -270,9 +217,10 @@ def gconnect():
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
 
-    user_id = service.getUserID(email=login_session['email'])
+    # check if the user is in the database
+    user_id = service.get_user_id(email=login_session['email'])
     if not user_id:
-        user_id = service.createUser(login_session)
+        user_id = service.create_user(login_session)
 
     login_session['user_id'] = user_id
 
@@ -280,9 +228,9 @@ def gconnect():
     output += '<p3>Connecting as '
     output += login_session['username']
     output += ' </p3>'
-    output += '<img src="'
+    output += '<img class="user-photo" src="'
     output += login_session['picture']
-    output += ' " style = "width: 30px; height: 30px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
+    output += ' "> '
 
     flash("Now logged in as %s" % login_session['username'])
     return output
@@ -312,39 +260,47 @@ def gdisconnect():
         response = make_response(json.dumps('Failed to revoke token for given user.', 400))
         response.headers['Content-Type'] = 'application/json'
         return response
+##### END of Oauth implementation ###############
 
 
-#Test engpoint to return users
-@app.route('/users/JSON')
-def usersJSON():
-    users = service.get_all_users()
-    return jsonify(Users=[i.serialize for i in users])
-
-#Test engpoint to return all questions
-@app.route('/questions/JSON')
-def questionsJSON():
-    questions = service.get_all_questions()
-    return jsonify(Questions=[i.serialize for i in questions])
-
-#Test engpoint to return all categories
-@app.route('/categories/JSON')
-def categoriesJSON():
-    categories = service.get_all_categories()
-    return jsonify(Categories=[i.serialize for i in categories])
-
-#Test engpoint to return all questions
-@app.route('/answers/JSON')
-def answersJSON():
-    answers = service.get_all_answers()
-    return jsonify(Answers=[i.serialize for i in answers])  # Test engpoint to return all questions
-
-#Returns all the categories and questions assigned to them
+###### JSON endpoints ##########
+# Returns all the categories and questions assigned to them
 @app.route('/alldata/JSON')
 def testJSON():
     all_data = service.get_all_data()
     return jsonify(all_data)
 
 
+# return all users
+@app.route('/users/JSON')
+def usersJSON():
+    users = service.get_all_users()
+    return jsonify(Users=[i.serialize for i in users])
+
+
+# return all questions
+@app.route('/questions/JSON')
+def questionsJSON():
+    questions = service.get_all_questions()
+    return jsonify(Questions=[i.serialize for i in questions])
+
+
+# return all categories
+@app.route('/categories/JSON')
+def categoriesJSON():
+    categories = service.get_all_categories()
+    return jsonify(Categories=[i.serialize for i in categories])
+
+
+# return all answers
+@app.route('/answers/JSON')
+def answersJSON():
+    answers = service.get_all_answers()
+    return jsonify(Answers=[i.serialize for i in answers])  # Test engpoint to return all questions
+##### end of JSON endpoints ######
+
+
+##### post, get handling ######
 @app.route('/question/new/', methods=['GET', 'POST'])
 def new_question():
     if ('username' or 'email') not in login_session:
@@ -394,7 +350,6 @@ def new_category():
         flash('New category created!')
         return redirect('/')
     else:  # if received GET
-        #TODO get category dictionary
         categories = {'biol': '1', 'hist':'2', 'astr':'5'}
         return render_template('newcategory.html', categories=categories)
 
@@ -500,13 +455,56 @@ def edit_question(question_id):
                                question=question,
                                categories=categories)
 
-# not used
-@app.route('/_category2python')
-def array2python():
-    category_id = json.loads(request.args.get('category_id'))
-    # do some stuff
-    print "Got from JS: " + str(category_id)
-    return jsonify(result=category_id)
+
+# user for image upload in user_edit()
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+
+@app.route('/user/edit', methods=['GET', 'POST'])
+def user_edit():
+    if request.method == 'POST':
+        if ('username' or 'email') not in login_session:
+            return redirect('/login')
+
+        if request.form['submit'] == 'Upload':
+            # check if the post request has the file part
+            if 'file' not in request.files:
+                flash('No file part')
+                return redirect('/user/edit')
+            file = request.files['file']
+            # if user does not select file, browser also
+            # submit a empty part without filename
+            if file.filename == '':
+                flash('No selected file')
+                return redirect('/user/edit')
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                user_id = service.get_user_id(login_session['email'])
+                new_filename = str(user_id) + '.' + filename.rsplit('.', 1)[1]
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], new_filename))
+                file_path = UPLOAD_FOLDER.strip('.') + '/' + new_filename
+                service.user_picture_update(
+                    user_id=user_id,
+                    filepath=file_path)
+                flash('The image was successfully uploaded')
+                return redirect('/')
+        if request.form['submit'] == 'Use':
+            user_id = service.get_user_id(login_session['email'])
+            service.user_picture_update(
+                user_id=user_id,
+                filepath=login_session['picture'])
+            flash('The image was successfully changed')
+            return redirect('/')
+        if request.form['submit'] == 'Cancel':
+            return redirect('/')
+
+    if request.method == 'GET':
+        if ('username' or 'email') not in login_session:
+            return redirect('/login')
+        user = service.get_user_info(service.get_user_id(login_session['email']))
+        return render_template('uploadpicture.html', user=user)
 
 
 if __name__ == '__main__':

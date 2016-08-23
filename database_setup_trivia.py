@@ -2,7 +2,6 @@ import sys
 from sqlalchemy import Column, ForeignKey, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-# from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 # import logging
 # logging.basicConfig()
@@ -11,7 +10,8 @@ import sqlalchemy as sa
 
 Base = declarative_base()
 
-
+# many to many relationship (one category can have many questions
+# and one question can belong to many categories
 question_category_association = sa.Table('QuestionCategoryAss', Base.metadata,
     Column('id', Integer, primary_key=True),
     Column('category_id', Integer, ForeignKey('category.id')),
@@ -68,8 +68,6 @@ class Question(Base):
 
     answers = relationship("Answer", backref="question", cascade="all, delete-orphan")
 
-    # categories = relationship("QuestionCategoryMap", backref="question")
-
     categories = relationship(
         "Category",
         secondary=question_category_association,
@@ -79,7 +77,6 @@ class Question(Base):
 
     @property
     def serialize(self):
-        # Returns object data in easily serializeable format
         return {
             'id': self.id,
             'text': self.text,
@@ -159,30 +156,5 @@ class Category(Base):
         }
 
 
-class QuestionCategoryMap(Base):
-    __tablename__ = 'question_category_map'
-
-    id = Column(
-        Integer, primary_key=True
-    )
-
-    category_id = Column(
-        Integer, ForeignKey('category.id')
-    )
-
-    question_id = Column(
-        Integer, ForeignKey('question.id')
-    )
-
-    @property
-    def serialize(self):
-        # Returns object data in easily serializeable format
-        return {
-            'id': self.id,
-            'category_id': self.category_id,
-            'question_id': self.question_id
-        }
-
-## end of file
 engine = create_engine('sqlite:///trivia_database.db')
 Base.metadata.create_all(engine)

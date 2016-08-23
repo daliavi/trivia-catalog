@@ -1,3 +1,26 @@
+*{
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	-ms-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+.user-photo{
+    width: 30px;
+    height: 30px;
+    border-radius: 150px;
+    -webkit-border-radius: 150px;
+    -moz-border-radius: 150px;
+}
+
+[class*="zocial-"]:before {
+	color: black;
+	display: inline-block;
+	font-family: 'zocial', sans-serif;
+	text-shadow: 3px 3px 3px #aaa;
+	width: 2em;
+}
+
 body{
     font-family: 'Roboto', sans-serif;
 }

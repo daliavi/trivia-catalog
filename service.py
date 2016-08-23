@@ -12,19 +12,19 @@ def get_db_session():
 db_session = get_db_session()
 
 
-def createUser(login_session):
-    newUser = User(
+def create_user(login_session):
+    new_user = User(
         name=login_session['username'],
         email=login_session['email'],
         picture=login_session['picture']
     )
-    db_session.add(newUser)
+    db_session.add(new_user)
     db_session.commit()
     user = db_session.query(User).filter_by(email=login_session['email']).one()
     return user.id
 
 
-def getUserInfo(user_id):
+def get_user_info(user_id):
     user = db_session.query(User).filter_by(id = user_id).one()
     return user
 
@@ -33,7 +33,8 @@ def get_user_by_email(email):
     user = db_session.query(User).filter_by(email=email).one()
     return user
 
-def getUserID(email):
+
+def get_user_id(email):
     try:
         user = db_session.query(User).filter_by(email=email).one()
         return user.id
@@ -158,7 +159,7 @@ def add_question(login_session, question, answers, categories):
 
 def edit_question(user_email, question, answers, categories):
     error_msg = ''
-    user_id = getUserID(user_email)
+    user_id = get_user_id(user_email)
     q = db_session.query(Question).filter_by(id=question[0]).one()
     if not q.created_by == user_id:
         error_msg = "The question could not be updated"
@@ -170,7 +171,7 @@ def edit_question(user_email, question, answers, categories):
 
         # updating categories of the question
 
-        #get ids of the categories
+        #get ids of the current categories
         cats_from_db = [c.id for c in q.categories]
 
         # ids of the new categories come in a list of strings, need to convert to int
@@ -182,17 +183,6 @@ def edit_question(user_email, question, answers, categories):
         # creating lists of category ids to remove and to add
         cats_to_remove = [c for c in cats_to_update if (c in cats_from_db)]
         cats_to_add = [c for c in cats_to_update if (c in cats_new)]
-
-        print "cats_from_db:"
-        print cats_from_db
-        print "cats_new"
-        print cats_new
-        print "cats_to_update"
-        print cats_to_update
-        print "cats_to_remove"
-        print cats_to_remove
-        print "cats_to_add"
-        print cats_to_add
 
         if cats_to_remove:
             for i in cats_to_remove:
@@ -233,7 +223,7 @@ def add_category(login_session, category_name):
 
 def delete_question(user_email, question_id):
     error_msg = ''
-    user_id = getUserID(user_email)
+    user_id = get_user_id(user_email)
     question = db_session.query(Question).filter_by(id=question_id).one()
     if not question.created_by == user_id:
         error_msg = "The questions could not be deleted"
@@ -242,4 +232,3 @@ def delete_question(user_email, question_id):
         db_session.delete(question)
         db_session.commit()
         return error_msg
-

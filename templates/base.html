@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <link href="https://fonts.googleapis.com/css?family=Lora|Roboto" rel="stylesheet">
+    <link rel="stylesheet" href="http://weloveiconfonts.com/api/?family=zocial" />
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap.min.css') }}">
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='styles.css') }}">
     {% block head %}
@@ -20,7 +21,7 @@
           </div>
           <div class="col-md-4">
               {% if user %}
-                <img src="{{picture}}" alt="{{user}}" style = "width: 30px; height: 30px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;" >
+                <img class="user-photo" src="{{picture}}" alt="{{user}}">
                 <a class="btn" href="{{ url_for('logout') }}">Logout</a>
               {% else %}
                 <a class="btn" href="{{ url_for('login') }}">Login</a>
@@ -44,12 +45,17 @@
     {% endif %}
     {% endwith %}
 </div>
-
 </nav>
-
     {% block content %}
     {% endblock %}
     {% block footer %}
+    <div class="row" id="social">
+        <div class="col-md-12 footer">
+          <a href="https://twitter.com/DaliaVitk" class="zocial-twitter">Twitter</a>
+          <a href="https://github.com/daliavi" class="zocial-github">Github</a>
+          <a href="https://www.linkedin.com/in/daliavi" class="zocial-linkedin">LinkedIn</a>
+        </div>
+    </div>
     <div class="row">
         <div class="col-md-12">
             <p class="footer">(c) Dalia Vitkauskaite 2016</p>
