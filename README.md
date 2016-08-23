@@ -29,5 +29,6 @@ To run the project on a virtual machine:
 - Import Flask SeaSurf library
 - `$sudo pip install flask-seasurf`
 - to create the database in vagrant/catalog directory run `$python database_setup_trivia.py`
+- in vagrant.catalog directory create 2 files client_secrets.json with Goggle secret and fb_client_secrets.json with Facebook app secret.
 - to start the project in vagrant/catalog directory run `$python project.py`
 - access the project on localhost:5000

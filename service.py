@@ -30,8 +30,11 @@ def get_user_info(user_id):
 
 
 def get_user_by_email(email):
-    user = db_session.query(User).filter_by(email=email).one()
-    return user
+    try:
+        user = db_session.query(User).filter_by(email=email).one()
+        return user
+    except:
+        return None
 
 
 def get_user_id(email):
@@ -53,18 +56,27 @@ def user_picture_update(user_id, filepath):
 
 
 def get_all_users():
-    all_users = db_session.query(User).all()
-    return all_users
+    try:
+        all_users = db_session.query(User).all()
+        return all_users
+    except:
+        return None
 
 
 def get_all_questions():
-    all_questions = db_session.query(Question).all()
-    return all_questions
+    try:
+        all_questions = db_session.query(Question).all()
+        return all_questions
+    except:
+        return None
 
 
 def get_all_categories():
-    all_categories = db_session.query(Category).all()
-    return all_categories
+    try:
+        all_categories = db_session.query(Category).all()
+        return all_categories
+    except:
+        return None
 
 
 def get_all_answers():
@@ -232,3 +244,10 @@ def delete_question(user_email, question_id):
         db_session.delete(question)
         db_session.commit()
         return error_msg
+
+
+def delete_category(category_id):
+    c = db_session.query(Category).filter_by(id=category_id).one()
+    db_session.delete(c)
+    db_session.commit()
+    return

@@ -40,13 +40,17 @@ def reverse_filter(s):
 @app.context_processor
 def inject_user():
     if 'username' not in login_session:
-        return dict(user="")
+        return dict(user='')
     else:
         user = service.get_user_by_email(login_session['email'])
-        return dict(user=user.name,
+        if user:
+            return dict(user=user.name,
                     picture=user.picture,
                     session_picture=login_session['picture'])
-
+        else:
+            return dict(user='',
+                        picture='',
+                        session_picture='')
 
 ######oauth implementation start ###########
 # creating anti-forgery state token

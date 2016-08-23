@@ -15,7 +15,7 @@
     <div class="card_category">
     <a class="cat_all" href="{{ url_for('main') }}">All Categories</a>
     <br>
-    {% for i in categories %}
+    {% for i in categories|sort(attribute='name') %}
         <a class="cat_list" href="{{ url_for('questions_by_category', category_id=i.id) }}">{{ i.name }}</a>
         <br>
     {% endfor %}
