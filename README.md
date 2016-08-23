@@ -25,7 +25,7 @@ To run the project on a virtual machine:
 - download Vagrant configuration from https://github.com/udacity/fullstack-nanodegree-vm
 - download project files to /vagrant/catalog directory
 - Upgrade SQLAlchemy if needed:
-- '$sudo pip install SQLAlchemy --upgrade'
+- `$sudo pip install SQLAlchemy --upgrade`
 - Import Flask SeaSurf library
 - `$sudo pip install flask-seasurf`
 - to create the database in vagrant/catalog directory run `$python database_setup_trivia.py`
