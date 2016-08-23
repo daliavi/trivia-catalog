@@ -4,7 +4,7 @@ The project create using Flask Python, SQLAlchemy with SQLite database, Facebook
 
 # Features
 - Login/logout with Facebook or Google
-- Update rofile picture
+- Update profile picture
 - Create a category
 - Create/update/delete a question and possible answers
 - Create/update/delete can be performed only by logged in users.
@@ -25,9 +25,9 @@ To run the project on a virtual machine:
 - download Vagrant configuration from https://github.com/udacity/fullstack-nanodegree-vm
 - download project files to /vagrant/catalog directory
 - Upgrade SQLAlchemy if needed:
-- sudo pip install SQLAlchemy --upgrade
+- '$sudo pip install SQLAlchemy --upgrade'
 - Import Flask SeaSurf library
-- sudo pip install flask-seasurf
-- to create the database in vagrant/catalog directory run python database_setup_trivia.py
-- to start the project in vagrant/catalog directory run python project.py
-- access the project on http://localhost:5000
+- '$sudo pip install flask-seasurf'
+- to create the database in vagrant/catalog directory run '$python database_setup_trivia.py'
+- to start the project in vagrant/catalog directory run '$python project.py'
+- access the project on localhost:5000
