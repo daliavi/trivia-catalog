@@ -29,10 +29,24 @@ def getUserInfo(user_id):
     return user
 
 
+def get_user_by_email(email):
+    user = db_session.query(User).filter_by(email=email).one()
+    return user
+
 def getUserID(email):
     try:
         user = db_session.query(User).filter_by(email=email).one()
         return user.id
+    except:
+        return None
+
+
+def user_picture_update(user_id, filepath):
+    try:
+        user = db_session.query(User).filter_by(id=user_id).one()
+        user.picture = filepath
+        db_session.add(user)
+        db_session.commit()
     except:
         return None
 

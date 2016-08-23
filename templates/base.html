@@ -33,7 +33,9 @@
 <div class="nav-btns">
     <a class="btn_menu" href="{{ url_for('new_category') }}">Add Category</a>
     <a class="btn_menu" href="{{ url_for('new_question') }}">Add Question</a>
-
+    {% if user: %}
+    <a class="btn_menu" href="{{ url_for('user_edit') }}">Edit User Info</a>
+    {% endif %}
     {% with messages = get_flashed_messages() %}
     {% if messages %}
             {% for message in messages %}

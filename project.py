@@ -1,5 +1,6 @@
-import flask
 from flask.ext.seasurf import SeaSurf
+from werkzeug.utils import secure_filename
+import os
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 import service
@@ -18,11 +19,62 @@ import requests
 
 CLIENT_ID = json.loads(
     open('client_secrets.json','r').read())['web']['client_id']
+UPLOAD_FOLDER = './static/avatar'
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__)
 csrf = SeaSurf(app)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+
+@app.route('/user/edit', methods=['GET', 'POST'])
+def user_edit():
+    if request.method == 'POST':
+        if ('username' or 'email') not in login_session:
+            return redirect('/login')
+
+        if request.form['submit'] == 'Upload':
+            # check if the post request has the file part
+            if 'file' not in request.files:
+                flash('No file part')
+                return redirect('/user/edit')
+            file = request.files['file']
+            # if user does not select file, browser also
+            # submit a empty part without filename
+            if file.filename == '':
+                flash('No selected file')
+                return redirect('/user/edit')
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                user_id = service.getUserID(login_session['email'])
+                new_filename = str(user_id) + '.' + filename.rsplit('.', 1)[1]
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], new_filename))
+                file_path = UPLOAD_FOLDER.strip('.') + '/' + new_filename
+                service.user_picture_update(
+                    user_id=user_id,
+                    filepath=file_path)
+                flash('The image was successfuly uploaded')
+                return redirect('/')
+        if request.form['submit'] == 'Use':
+            user_id = service.getUserID(login_session['email'])
+            service.user_picture_update(
+                user_id=user_id,
+                filepath=login_session['picture'])
+            flash('The image was successfuly changed')
+            return redirect('/')
+        if request.form['submit'] == 'Cancel':
+            return redirect('/')
+
+    if request.method == 'GET':
+        if ('username' or 'email') not in login_session:
+            return redirect('/login')
+        user = service.getUserInfo(service.getUserID(login_session['email']))
+        return render_template('uploadpicture.html', user=user)
 
 # registering custom filter for jinja
 @app.template_filter('shuffle')
@@ -40,8 +92,10 @@ def inject_user():
     if 'username' not in login_session:
         return dict(user="")
     else:
-        return dict(user=login_session['username'],
-                    picture=login_session['picture'])
+        user = service.get_user_by_email(login_session['email'])
+        return dict(user=user.name,
+                    picture=user.picture,
+                    session_picture=login_session['picture'])
 
 
 # creating anti-forgery state token
